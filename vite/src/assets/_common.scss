@@ -1,0 +1,48 @@
+// fontawesome & bootstrap icons
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+@import '@fortawesome/fontawesome-free/css/fontawesome.min.css';
+@import '@fortawesome/fontawesome-free/css/solid.min.css';
+
+// videojs
+@import 'video.js/dist/video-js.css';
+@import 'videojs-theme-kit/style.css';
+.video-js .vjs-menu-content {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+// from https://github.com/Teyuto/videojs-vtt-thumbnails (manually adding it to play nicer with vite)
+.thumbnail-preview {
+  position: absolute;
+  bottom: 55px;
+  pointer-events: none;
+  display: none;
+}
+
+.thumbnail {
+  position: absolute;
+  height: 100%;
+  background-size: auto;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  display: none;
+  transform: translateX(-50%) translateY(-100%);
+}
+
+.video-js .thumbnail-preview .thumbnail {
+  border: 2px solid #fff;
+  border-radius:5px;
+}
+
+// openlayers
+@import 'ol/ol.css';
+
+// pannellum
+@import './pannellum/pannellum.css';
+
+.ol-control button {
+  font-size: 1.5em;
+  pointer-events: auto;
+  i {
+    cursor: pointer;
+  }
+}

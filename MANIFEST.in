@@ -1,0 +1,2 @@
+recursive-include django_dh_map/static *
+recursive-include django_dh_map/templates *

@@ -1,0 +1,15 @@
+html {
+    font-size: 14px;
+}
+
+.modal-backdrop {
+  // --bs-modal-zindex = 1055 (so go a little less
+  --bs-backdrop-zindex: 1050 !important;
+  --bs-backdrop-bg: black !important;
+  --bs-backdrop-opacity: 0.75 !important;
+}
+
+
+.tooltip {
+  z-index: 9001;
+}

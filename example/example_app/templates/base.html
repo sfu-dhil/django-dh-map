@@ -1,0 +1,55 @@
+{% load static %}
+{% load django_vite %}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="google" content="notranslate" />
+        <title>Example App</title>
+        <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+
+        <link rel="stylesheet" href="{% static 'django_dh_map/dist/django_dh_map.css' %}">
+        <script src="{% static 'django_dh_map/dist/django_dh_map.js' %}" defer></script>
+        {% vite_hmr_client %}
+        {% vite_asset 'example.js' crossorigin="" %}
+        {% block styles %}
+        {% endblock %}
+    </head>
+    <body class="d-flex flex-column min-vh-100">
+        {% block header %}
+        <header>
+            <nav class="navbar navbar-expand-lg flex-shrink-0">
+                <div class="container">
+                    <a class="navbar-brand" href="{% url 'home' %}">Example App</a>
+                </div>
+            </nav>
+        </header>
+        {% endblock %}
+        <main class="flex-grow-1 bg-secondary-subtle">
+            {% block content %}
+            {% endblock %}
+        </main>
+        {% block footer %}
+        <footer class="py-4 flex-shrink-0">
+            <div class="container">
+                <div class="row align-items-center justify-content-between flex-column flex-sm-row">
+                    <div class="col-auto">
+                        <div class="small m-0 text-white">Example App</div>
+                    </div>
+                    <div class="col-auto">
+                        <a class="link-light small" href="https://docs.dhil.lib.sfu.ca/privacy.html" target="_blank">Privacy</a>
+                        {% if GIT_REPO_LINK and GIT_REPO_LINK_TEXT %}
+                            <span class="text-white mx-1">&middot;</span>
+                            <a class="link-light small" target="_blank" href="{{ GIT_REPO_LINK }}">{{ GIT_REPO_LINK_TEXT }}</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </footer>
+        {% endblock %}
+        {% block javascript %}
+        {% endblock %}
+    </body>
+</html>

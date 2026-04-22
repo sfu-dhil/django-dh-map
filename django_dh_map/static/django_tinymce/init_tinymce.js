@@ -1,0 +1,134 @@
+'use strict';
+
+{
+  function onEditorInit(editor) {
+    const event = new CustomEvent('tinyMceEditorInit', { detail: editor });
+    document.dispatchEvent(event);
+  }
+  async function initTinyMCE(el) {
+    if (el.closest('.empty-form') === null) {  // Don't do empty inlines
+      var mce_conf = JSON.parse(el.dataset.mceConf);
+
+      // There is no way to pass a JavaScript function as an option
+      // because all options are serialized as JSON.
+      const fns = [
+        'color_picker_callback',
+        'file_browser_callback',
+        'file_picker_callback',
+        'images_dataimg_filter',
+        'images_upload_handler',
+        'paste_postprocess',
+        'paste_preprocess',
+        'init_instance_callback',
+        'setup',
+        'urlconverter_callback',
+        'media_url_resolver',
+        'video_template_callback',
+        'iframe_template_callback',
+        'audio_template_callback',
+      ];
+      fns.forEach((fn_name) => {
+        if (typeof mce_conf[fn_name] != 'undefined') {
+          if (mce_conf[fn_name].includes('(')) {
+            mce_conf[fn_name] = eval('(' + mce_conf[fn_name] + ')');
+          }
+          else {
+            mce_conf[fn_name] = window[mce_conf[fn_name]];
+          }
+        }
+      });
+
+      // replace default prefix of 'empty-form' if used in selector
+      if (mce_conf.selector && mce_conf.selector.includes('__prefix__')) {
+        mce_conf.selector = `#${el.id}`;
+      }
+      else if (!('selector' in mce_conf)) {
+        mce_conf['target'] = el;
+      }
+      if (el.dataset.mceGzConf) {
+        tinyMCE_GZ.init(JSON.parse(el.dataset.mceGzConf));
+      }
+      // Dispatch per-instance event while preserving user callback
+      const userInitInstanceCallback = mce_conf.init_instance_callback;
+      mce_conf.init_instance_callback = function(editor) {
+        if (typeof userInitInstanceCallback === 'function') {
+          userInitInstanceCallback(editor);
+        }
+        onEditorInit(editor);
+      };
+      if (!tinyMCE.get(el.id)) {
+        return await tinyMCE.init(mce_conf);
+      }
+    }
+    return [];
+  }
+
+  // Call function fn when the DOM is loaded and ready. If it is already
+  // loaded, call the function now.
+  function ready(fn) {
+    if (document.readyState !== 'loading') {
+      fn();
+    } else {
+      document.addEventListener('DOMContentLoaded', fn);
+    }
+  }
+
+  async function initializeTinyMCE(element, formsetName) {
+    const areas = Array.from(element.querySelectorAll('.tinymce'));
+    const initPromises = areas.map(area => initTinyMCE(area));
+
+    const results = await Promise.all(initPromises);
+    const allEditors = results.flat();
+    if (allEditors.length) {
+      const event = new CustomEvent('tinyMceAllEditorsInit', { detail: allEditors });
+      document.dispatchEvent(event);
+    }
+    return allEditors;
+  }
+
+  ready(function() {
+    if (!tinyMCE) {
+      throw 'tinyMCE is not loaded. If you customized TINYMCE_JS_URL, double-check its content.';
+    }
+    // initialize the TinyMCE editors on load
+    initializeTinyMCE(document);
+
+    // initialize the TinyMCE editor after adding an inline in the django admin context.
+    if (typeof(django) !== 'undefined' && typeof(django.jQuery) !== 'undefined') {
+      // from https://stackoverflow.com/a/19401707
+      django.jQuery.fn.onClassChange = function(cb) {
+        return django.jQuery(this).each((_, el) => {
+          new MutationObserver(mutations => {
+            mutations.forEach(mutation => cb && cb(mutation.target, mutation.target.className));
+          }).observe(el, { attributes: true, attributeFilter: ['class'] });
+        });
+      }
+
+      const handleSortingDragForItemEl = (itemEl) => {
+        let hasDragClass = false
+        django.jQuery(itemEl).onClassChange((el, newClass) => {
+          const hadDragClass = hasDragClass
+          hasDragClass = django.jQuery(el).hasClass('djn-item-dragging')
+          if (hadDragClass && !hasDragClass) {
+            for (let tinyMceEl of el.querySelectorAll('.tinymce')) {
+              // fixes some issues with drag and drop when focused
+              setTimeout(() => {
+                tinyMCE.get(`${tinyMceEl.id}`).remove()
+                initTinyMCE(tinyMceEl)
+              }, 1)
+            }
+          }
+        })
+      }
+
+      django.jQuery(document).on('formset:added', (event, $row, formsetName) => {
+        if (event.detail && event.detail.formsetName) {
+          // Django >= 4.1
+          initializeTinyMCE(event.target);
+          handleSortingDragForItemEl(event.target)
+        }
+      });
+      django.jQuery(".djn-fieldset > .djn-items > .djn-item").each((index, itemEl) => handleSortingDragForItemEl(itemEl))
+    }
+  });
+}

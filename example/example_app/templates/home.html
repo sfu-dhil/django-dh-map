@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load solo_tags %}
+
+{% block styles %}
+{% endblock %}
+
+{% block content %}
+    {% get_solo 'example_app.HomePage' as home_page %}
+    <div class="container pb-5">
+        <h1>{{ home_page.title }}</h1>
+        <div class="content-blocks-app" data-content-blocks-json="{{ content_blocks_json|escape }}"></div>
+        <div class="d-flex gap-3 justify-content-center">
+            {% if home_page.first_button_map %}
+                <a class="btn btn-primary btn-lg px-4 me-sm-3" href="{% url 'app' %}#/maps/{{ home_page.first_button_map.pk }}">{{ home_page.first_button_label }}</a>
+            {% endif %}
+            {% if home_page.second_button_map %}
+                <a class="btn btn-outline-light btn-lg px-4" href="{% url 'app' %}#/maps/{{ home_page.second_button_map.pk }}">{{ home_page.second_button_label }}</a>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

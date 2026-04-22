@@ -1,0 +1,4 @@
+{% include "django/forms/widgets/textarea.html" %}
+{% if widget.instance %}
+<div class="openlayers-features-app" data-form-json-input-id="{{ widget.attrs.id }}" data-form-properties-input-id="id_properties" data-map-id="{{ widget.instance.pk }}"></div>
+{% endif %}

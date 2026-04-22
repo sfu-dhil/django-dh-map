@@ -1,0 +1,70 @@
+// 1. Include functions first (so you can manipulate colors, SVGs, calc, etc)
+@import 'bootstrap/scss/functions';
+
+// 3. Include remainder of required Bootstrap stylesheets (including any separate color
+@import 'bootstrap/scss/variables';
+@import 'bootstrap/scss/variables-dark';
+
+// 5. Include remainder of required parts
+@import 'bootstrap/scss/maps';
+@import 'bootstrap/scss/mixins';
+@import 'bootstrap/scss/root';
+
+@import './common';
+
+// vue-select
+@import 'vue-select/dist/vue-select.css';
+
+.vs__dropdown-toggle {
+  background-color: #fff;
+}
+.vs__selected-options,
+.vs__search,
+.vs__selected {
+  font-size: var(--vs-font-size);
+  line-height: var(--vs-line-height);
+  margin: 0 !important;
+  padding-top: 3px !important;
+  padding-bottom: 1px !important;
+}
+.vs__clear {
+  padding-left: 3px;
+  padding-right: 5px;
+}
+.vs__dropdown-option {
+  font-size: 1rem !important;
+}
+
+.admin-image-preview {
+  max-width: 400px;
+  max-height: 100px;
+}
+
+.admin-video-preview-app {
+  width: 400px;
+}
+
+/* HACK TO FIX inline headings spacing (missing .fieldset-heading class for some reason) */
+.collapse summary h2 {
+    display: inline;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.admin-video-preview-app,
+.admin-before-after-preview-app,
+.admin-gallery-preview-app,
+.openlayers-preview-app,
+.openlayers-features-app,
+.pannellum-preview-app,
+.pannellum-features-app {
+  @import 'bootstrap/scss/bootstrap.scss';
+}
+
+.openlayers-features-app {
+  width: 100%;
+}
+
+.admin-interface .module.calendarbox {
+  width: inherit !important;
+}
