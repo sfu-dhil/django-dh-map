@@ -1,0 +1,38 @@
+{
+  "name": "django-dh-map",
+  "version": "1.0.0",
+  "license": "GPL-3.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "watch": "vite build --watch",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.2.0",
+    "@img-comparison-slider/vue": "^8.0.0",
+    "@popperjs/core": "^2.11.8",
+    "@videojs-player/vue": "^1.0.0",
+    "@vueuse/components": "^14.2.1",
+    "@vueuse/core": "^14.2.1",
+    "bootstrap": "^5.3.8",
+    "bootstrap-icons": "^1.13.1",
+    "ol": "^10.8.0",
+    "ol-contextmenu": "^6.0.0",
+    "ol-ext": "^4.0.38",
+    "pannellum": "^2.5.7",
+    "video.js": "^8.23.4",
+    "videojs-contrib-quality-levels": "^4.1.0",
+    "videojs-hls-quality-selector": "^2.0.0",
+    "videojs-theme-kit": "^0.0.15",
+    "vue": "^3.5.33",
+    "vue3-openlayers": "^12.2.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.3",
+    "sass": "^1.97.2",
+    "vite": "^7.3.1"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}

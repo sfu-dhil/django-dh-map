@@ -1,0 +1,38 @@
+# Django
+Django==6.0.3
+django-polymorphic==4.11.2
+# django-nested-admin==4.1.6
+django-nested-admin @ git+https://github.com/djmaze/django-nested-admin@fix/django-polymorphic-4.6-compatibility-improved
+django-admin-interface==0.32.0
+django-solo>=2.5.1
+django-tinymce==5.0.0
+django-imagekit==6.1.0
+django-ffield==0.0.9
+python-magic==0.4.27 # required by django-ffield
+django-async-upload-kg==4.0.5
+django-js-asset==3.1.2
+
+# Django other
+django-health-check==3.20.8
+django-cleanup==9.0.0
+django-cache-cleaner==0.2.0
+
+# Environment variables
+django-environ==0.13.0
+python-dotenv==1.2.1
+
+# server
+gunicorn==25.1.0
+
+# jobs: rq for processing
+django-rq==3.2.2
+redis==7.4.0
+
+# post processing jobs
+pillow==12.1.1
+numpy==2.4.4
+py360convert==1.0.4
+natsort==8.4.0
+
+# Database (psycopg[binary] cannot be locked to specific version number)
+psycopg[binary]

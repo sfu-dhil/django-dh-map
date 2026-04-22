@@ -1,0 +1,89 @@
+// 1. Include functions first (so you can manipulate colors, SVGs, calc, etc)
+@import "bootstrap/scss/functions";
+
+// 3. Include remainder of required Bootstrap stylesheets (including any separate color
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/variables-dark";
+
+// 5. Include remainder of required parts
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/root";
+
+// 6. Optionally include any other parts as needed
+@import "bootstrap/scss/_modal.scss";
+@import "bootstrap/scss/_close.scss";
+@import "bootstrap/scss/_tooltip.scss";
+
+// videojs
+@import "video.js/dist/video-js.css";
+@import "videojs-theme-kit/style.css";
+.video-js .vjs-menu-content {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+// from https://github.com/Teyuto/videojs-vtt-thumbnails (manually adding it to play nicer with vite)
+.thumbnail-preview {
+  position: absolute;
+  bottom: 55px;
+  pointer-events: none;
+  display: none;
+}
+
+.thumbnail {
+  position: absolute;
+  height: 100%;
+  background-size: auto;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  display: none;
+  transform: translateX(-50%) translateY(-100%);
+}
+
+.video-js .thumbnail-preview .thumbnail {
+  border: 2px solid #fff;
+  border-radius:5px;
+}
+
+// openlayers
+@import "ol/ol.css";
+
+// pannellum
+@import "pannellum/build/pannellum.css";
+
+// fontawesome & bootstrap icons
+@import "bootstrap-icons/font/bootstrap-icons.css";
+@import "@fortawesome/fontawesome-free/css/fontawesome.min.css";
+@import "@fortawesome/fontawesome-free/css/solid.min.css";
+
+.admin-image-preview {
+  max-width: 400px;
+  max-height: 100px;
+}
+
+.admin-video-preview-app {
+  width: 400px;
+}
+
+
+/* HACK TO FIX inline headings spacing (missing .fieldset-heading class for some reason) */
+.collapse summary h2 {
+    display: inline;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.ol-control button {
+  font-size: 1.5em;
+  pointer-events: auto;
+  i {
+    cursor: pointer;
+  }
+}
+
+.admin-video-preview-app,
+.admin-before-after-preview-app,
+.overhead-map-preview-app,
+.panorama-map-preview-app {
+  @import 'bootstrap/scss/bootstrap.scss';
+}

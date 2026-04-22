@@ -1,0 +1,108 @@
+services:
+  db:
+    container_name: django_dh_map_db
+    image: postgis/postgis:18-3.6
+    # postgis only supports the linux/amd64 platform
+    platform: linux/amd64
+    ports:
+      - "15432:5432"
+    volumes:
+      - .data/postgres:/var/lib/postgresql
+    environment:
+      POSTGRES_DB: django_dh_map
+      POSTGRES_USER: django_dh_map
+      POSTGRES_PASSWORD: password
+    healthcheck:
+      test: pg_isready -U django_dh_map -d django_dh_map && psql -U django_dh_map -d django_dh_map -c 'SELECT 1;' || exit 1
+      interval: 2s
+      retries: 120
+
+  redis:
+    container_name: django_dh_map_redis
+    image: redis:8.6-alpine
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - .data/redis:/data
+    ports:
+      - "16379:6379"
+    healthcheck:
+      test: redis-cli ping | grep PONG
+      interval: 2s
+      retries: 120
+
+  nginx:
+    container_name: django_dh_map_nginx
+    image: nginx:1.29-alpine
+    volumes:
+      # config
+      - ./example/docker/nginx.conf:/etc/nginx/nginx.conf
+      # mount app media and static content
+      - .data/media:/media:ro
+      # - .data/static:/static:ro # do not mount in development mode
+    ports:
+      - "8080:80"
+    healthcheck:
+      test: service nginx status || exit 1
+      interval: 2s
+      retries: 120
+    depends_on:
+      app:
+        condition: service_healthy
+
+  app: &app
+    container_name: django_dh_map_app
+    build:
+      context: .
+    volumes:
+      # code for development
+      - ./example/manage.py:/app/manage.py
+      - ./example/requirements.txt:/app/requirements.txt
+      - ./example/example_app:/app/example_app
+      - ./example/example_project:/app/example_project
+      - ./django_dh_map:/app/django_dh_map
+
+      # files uploads
+      - .data/media:/media
+
+      # # persist static outside of container so it can be shared with nginx
+      # - .data/static:/app/static # do not mount in development mode
+    environment:
+      DEBUG: True
+      DB_HOST: db
+      DB_NAME: django_dh_map
+      DB_USER: django_dh_map
+      DB_PASSWORD: password
+      REDIS_HOST: redis
+      EMAIL_HOST: mail
+      EMAIL_HOST_USER: django_dh_map
+      EMAIL_HOST_PASSWORD: password
+      MEDIA_FOLDER_UID: 101
+      MEDIA_FOLDER_GID: 101
+      GUNICORN_CMD_ARGS: --reload --workers=3 --log-level info
+    healthcheck:
+      test: curl --fail http://localhost/health_check/ || exit 1
+      interval: 2s
+      retries: 120
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    <<: *app
+    container_name: django_dh_map_worker
+    command: ./manage.py rqworker default
+    healthcheck:
+      test: rq info --interval 0 || exit 1
+      interval: 5s
+      retries: 10
+    depends_on:
+      app:
+        condition: service_healthy
+
+  mail:
+    container_name: django_dh_map_mail
+    image: jcalonso/mailhog:v1.0.1
+    ports:
+      - "8025:8025"
