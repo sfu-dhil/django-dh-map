@@ -1,6 +1,6 @@
 # Django
-Django>=6.0.3
-django-polymorphic>=4.11.2
+Django>=6.0.8
+django-polymorphic>=4.11.7
 # django-nested-admin>=4.1.6
 django-nested-admin @ git+https://github.com/djmaze/django-nested-admin@fix/django-polymorphic-4.6-compatibility-improved
 django-jsonform>=2.23.2
@@ -11,18 +11,18 @@ django-imagekit>=6.1.0
 django-ffield>=0.0.9
 python-magic>=0.4.27 # required by django-ffield
 django-async-upload-kg>=4.0.5
-django-js-asset>=3.1.2
-djangorestframework>=3.17.1
+django-js-asset>=4.0.2
+djangorestframework>=3.17.2
 djangorestframework-gis>=1.2.1
 django-admin-sortable2>=2.3.1
 
 # jobs: rq for processing
-django-rq>=3.2.2
-redis>=7.4.0
+django-rq>=4.1.1
+redis>=8.1.0
 
 # post processing jobs
-pillow>=12.1.1
-numpy>=2.4.4
+pillow>=12.3.0
+numpy>=2.5.2
 py360convert>=1.0.4
 natsort>=8.4.0
 

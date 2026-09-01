@@ -64,7 +64,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'health_check',
     'cache_cleaner',
-    'django_cleanup.apps.CleanupConfig',
+    'django_cleanup',
     'polymorphic',
     'rest_framework',
     'rest_framework_gis',

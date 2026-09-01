@@ -179,7 +179,7 @@ class InfoPage(ContentItem):
 
     def save(self, *args, **kwargs):
         if not self.pk and not self.position:
-            self.position = (Map.objects.aggregate(models.Max('position'))['position__max'] or 0 ) + 1
+            self.position = (InfoPage.objects.aggregate(models.Max('position'))['position__max'] or 0 ) + 1
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -276,7 +276,7 @@ class ContentBlock(PolymorphicModel):
 
     def save(self, *args, **kwargs):
         if not self.pk and not self.position:
-            self.position = (Map.objects.aggregate(models.Max('position'))['position__max'] or 0 ) + 1
+            self.position = (ContentBlock.objects.aggregate(models.Max('position'))['position__max'] or 0 ) + 1
         super().save(*args, **kwargs)
 
 class ContentBlockRichText(ContentBlock):
@@ -408,7 +408,7 @@ class ContentBlockImageGalleryImage(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.pk and not self.position:
-            self.position = (Map.objects.aggregate(models.Max('position'))['position__max'] or 0 ) + 1
+            self.position = (ContentBlockImageGalleryImage.objects.aggregate(models.Max('position'))['position__max'] or 0 ) + 1
         super().save(*args, **kwargs)
 
 class ContentBlockImageBeforeAndAfter(ContentBlock):

@@ -21,10 +21,11 @@ from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
+from health_check.views import HealthCheckView
 
 urlpatterns = [
     # health check ping endpoint
-    path('health_check/', include('health_check.urls')),
+    path('health_check/', HealthCheckView.as_view(checks=['health_check.Cache', 'health_check.Database', 'health_check.Mail', 'health_check.Storage']), name="health_check",),
 
     # admin password reset endpoints (from https://docs.djangoproject.com/en/5.0/ref/contrib/admin/#adding-a-password-reset-feature)
     path('admin/password_reset/', auth_views.PasswordResetView.as_view(), name='admin_password_reset'),

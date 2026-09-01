@@ -404,7 +404,7 @@ const {
 const resetTooltips = () => {
   nextTick(() => {
     mapRef.value.map.getTargetElement().querySelectorAll('[data-bs-toggle="tooltip"]').forEach(
-      (tooltipTriggerEl) => Tooltip.getOrCreateInstance(tooltipTriggerEl, {container: mapRef.value.map.getTargetElement()})
+      (tooltipTriggerEl) => Tooltip.getOrCreateInstance(tooltipTriggerEl, {container: mapRef.value.map.getTargetElement()}).hide()
     )
   })
 }

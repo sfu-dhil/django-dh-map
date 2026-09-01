@@ -24,7 +24,7 @@ onMounted(() => {
   modalRef.value.addEventListener('shown.bs.modal', () => shown.value = true)
   // setup tooltip (if needed)
   modalRef.value.querySelectorAll('carousel-caption i').forEach(
-    (iconEl) => Tooltip.getOrCreateInstance(iconEl)
+    (iconEl) => Tooltip.getOrCreateInstance(iconEl).hide()
   )
 })
 </script>

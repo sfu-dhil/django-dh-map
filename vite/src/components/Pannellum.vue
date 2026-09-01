@@ -383,7 +383,7 @@ const resetViewToInitial = () => {
 // end edit actions
 onMounted(() => {
   pannellumWrapperRef.value.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(
-    (tooltipTriggerEl) => Tooltip.getOrCreateInstance(tooltipTriggerEl, {container: pannellumWrapperRef.value})
+    (tooltipTriggerEl) => Tooltip.getOrCreateInstance(tooltipTriggerEl, {container: pannellumWrapperRef.value}).hide()
   )
   loadPannellum()
   animationFrameId.value = window.requestAnimationFrame(animationFrameLoop)

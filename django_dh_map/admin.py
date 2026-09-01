@@ -320,8 +320,8 @@ class ContentBlockAudioAdmin(DjangoDhMapAdminMixin, PolymorphicChildModelAdmin):
     def reprocess_audio_stream(self, request, queryset):
         job_count = 0
         for audio in queryset:
-            # enqueue(task_audio_stream_generator, audio.pk)
-            task_audio_stream_generator(audio.pk)
+            enqueue(task_audio_stream_generator, audio.pk)
+            # task_audio_stream_generator(audio.pk)
             job_count+=1
         self.message_user(request, f'Created {job_count} jobs.', messages.SUCCESS)
 

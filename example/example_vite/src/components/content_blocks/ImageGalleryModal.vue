@@ -52,7 +52,7 @@ onMounted(() => {
   nextTick(setupCarousel)
   // setup tooltips (if needed)
   modalRef.value.querySelectorAll('carousel-caption i').forEach(
-    (iconEl) => Tooltip.getOrCreateInstance(iconEl)
+    (iconEl) => Tooltip.getOrCreateInstance(iconEl).hide()
   )
 })
 </script>

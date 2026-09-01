@@ -33,7 +33,7 @@ const mapRef = ref(null)
 const resetTooltips = () => {
   nextTick(() => {
     mapWrapperRef.value.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(
-      (tooltipTriggerEl) => Tooltip.getOrCreateInstance(tooltipTriggerEl, {container: mapWrapperRef.value})
+      (tooltipTriggerEl) => Tooltip.getOrCreateInstance(tooltipTriggerEl, {container: mapWrapperRef.value}).hide()
     )
   })
 }

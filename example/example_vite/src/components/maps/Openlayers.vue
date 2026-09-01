@@ -222,7 +222,7 @@ const overrideOpenLayersFeatureStyle = (openLayersFeature) => {
     return null
   }
 }
-
+const isMapFeatureFilter = (feature) => !!feature.get('resourcetype')
 const hoverFeature = (event) => {
   const openLayersFeature = event.selected.length > 0 ? event.selected[0] : null
   if (openLayersFeature && openLayersFeature.get('resourcetype') === MapGeojsonResourceTypes.feature) {
@@ -311,10 +311,10 @@ onMounted(() => {
         :url="`${websiteOrigin}/api/maps/${map.id}/geojson`" :format="geoJson"
       >
         <ol-style :overrideStyleFunction="overrideOpenLayersFeatureStyle"></ol-style>
-        <ol-interaction-select @select="hoverFeature" :condition="pointerMoveCondition">
+        <ol-interaction-select :filter="isMapFeatureFilter" @select="hoverFeature" :condition="pointerMoveCondition">
           <ol-style :overrideStyleFunction="overrideOpenLayersFeatureStyle"></ol-style>
         </ol-interaction-select>
-        <ol-interaction-select @select="clickFeature" :condition="clickCondition">
+        <ol-interaction-select :filter="isMapFeatureFilter" @select="clickFeature" :condition="clickCondition">
           <ol-style :overrideStyleFunction="overrideOpenLayersFeatureStyle"></ol-style>
         </ol-interaction-select>
       </ol-source-vector>
