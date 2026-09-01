@@ -7,9 +7,14 @@ from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.routers import DefaultRouter
 from rest_framework.permissions import IsAdminUser
 from rest_framework.renderers import JSONRenderer
-from rest_framework.decorators import action
-from rest_framework.response import Response
 
+class DefaultRouterWithUnregister(DefaultRouter):
+    def unregister(self, prefix):
+        # remove the prefix if exists
+        self.registry = [item for item in self.registry if item[0] != prefix]
+        # Clear the cached URLs so they re-generate on the next access
+        if hasattr(self, '_urls'):
+            delattr(self, '_urls')
 
 from .serializers import MapGeoJsonPolymorphicSerializer, MapPolymorphicSerializer, \
     FeatureStubSerializer, FeatureSerializer, InfoPageSerializer
@@ -91,12 +96,12 @@ class InfoPageViewSet(ReadOnlyModelViewSet):
     queryset = InfoPage.objects.prefetch_related('content_blocks').filter(published=True).all()
     serializer_class = InfoPageSerializer
 
-admin_router = DefaultRouter(use_regex_path=False, trailing_slash=False)
+admin_router = DefaultRouterWithUnregister(use_regex_path=False, trailing_slash=False)
 admin_router.register('maps/<int:map_id>/geojson', AdminMapGeoJsonViewSet)
 admin_router.register('features', AdminFeatureViewSet)
 admin_router.register('maps', AdminMapViewSet)
 
-public_router = DefaultRouter(use_regex_path=False, trailing_slash=False)
+public_router = DefaultRouterWithUnregister(use_regex_path=False, trailing_slash=False)
 public_router.register('maps/<int:map_id>/geojson', PublicMapGeoJsonViewSet)
 public_router.register('features', PublicFeatureViewSet)
 public_router.register('maps', PublicMapViewSet)
