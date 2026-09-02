@@ -115,7 +115,7 @@ class FeatureStubSerializer(serializers.ModelSerializer):
     icon = IconPolymorphicSerializer()
     class Meta:
         model = Feature
-        fields = ['id', 'title', 'published', 'icon']
+        fields = ['id', 'title', 'published', 'properties', 'icon']
 
 # full records
 class FeatureSerializer(serializers.ModelSerializer):
@@ -123,13 +123,13 @@ class FeatureSerializer(serializers.ModelSerializer):
     content_blocks = ContentBlockPolymorphicSerializer(many=True)
     class Meta:
         model = Feature
-        fields = ['id', 'title', 'published', 'icon', 'content_blocks']
+        fields = ['id', 'title', 'published', 'properties', 'icon', 'content_blocks']
 
 class InfoPageSerializer(serializers.ModelSerializer):
     content_blocks = ContentBlockPolymorphicSerializer(many=True)
     class Meta:
         model = InfoPage
-        fields = ['id', 'title', 'published', 'content_blocks']
+        fields = ['id', 'title', 'published', 'properties', 'content_blocks']
 
 class XyzMapSerializer(serializers.ModelSerializer):
     class Meta:

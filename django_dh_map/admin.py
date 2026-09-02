@@ -28,7 +28,8 @@ from .font_icons import FontIcon
 from .serializers import ContentBlockImageGalleryImageSerializer
 from .widgets import TextDataListWidget
 from .forms import BaseMapAdminForm, XyzMapForm, OverheadImageMapForm, PanoramaImageMapForm
-from .settings import DH_MAP_DEFAULT_PROPERTIES_SCHEMA, DH_MAP_CI_FEATURE_PROPERTIES_SCHEMA
+from .settings import DH_MAP_DEFAULT_PROPERTIES_SCHEMA, \
+    DH_MAP_CI_FEATURE_PROPERTIES_SCHEMA, DH_MAP_CI_INFO_PAGE_PROPERTIES_SCHEMA
 
 def video_preview_app_tag(video, title, thumbnail, thumbnails_vtt):
     return f'<div class="admin-video-preview-app" data-video="{video.url}" data-title="{title}" data-thumbnail="{thumbnail.url if thumbnail else ''}" data-thumbnails-vtt="{thumbnails_vtt.url if thumbnails_vtt else ''}"></div>'
@@ -350,8 +351,14 @@ class InfoPageAdmin(SortableAdminMixin, AbstractContentItemAdmin):
     list_display = ('position', 'id', 'title', '_status')
     list_display_links = ('id', 'title')
     ordering = ['position']
-    fields = ['title', 'published']
+    fields = ['title', 'published', 'properties']
     inlines = [ContentBlockInline]
+
+    def get_fields(self, request, obj=None):
+        fields = super().get_fields(request, obj)
+        if obj and 'properties' in fields and DH_MAP_CI_INFO_PAGE_PROPERTIES_SCHEMA == DH_MAP_DEFAULT_PROPERTIES_SCHEMA:
+            fields.remove('properties')
+        return fields
 
 class IconInline(NestedStackedPolymorphicInline):
     model = Icon

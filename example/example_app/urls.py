@@ -6,7 +6,7 @@ from . import views
 from . import api
 
 urlpatterns = [
-    path("", views.HomeView.as_view(), name='home'),
-    path("app", views.AppView.as_view(), name='app'),
+    path('', views.HomeView.as_view(), name='home'),
+    path('app', views.AppView.as_view(), name='app'),
     path('api/content', api.static_content),
 ]

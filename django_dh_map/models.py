@@ -10,7 +10,7 @@ from django_jsonform.models.fields import JSONField
 
 from .fields import AsyncFFileField, ImageFFileField
 from .settings import MEDIA_ROOT_DIR, MEDIA_URL, \
-    DH_MAP_CI_FEATURE_PROPERTIES_SCHEMA
+    DH_MAP_CI_FEATURE_PROPERTIES_SCHEMA, DH_MAP_CI_INFO_PAGE_PROPERTIES_SCHEMA
 
 class Map(PolymorphicModel):
     class SpacialReferenceIdentifier(models.IntegerChoices):
@@ -171,6 +171,7 @@ class InfoPage(ContentItem):
     title = models.CharField()
     published = models.BooleanField(verbose_name='Published?', default=False, db_index=True)
     position = models.IntegerField(default=0, db_index=True)
+    properties = JSONField(schema=DH_MAP_CI_INFO_PAGE_PROPERTIES_SCHEMA, null=True, blank=True, default=dict)
 
     class Meta:
         db_table = 'django_dh_ci_info_page'
