@@ -12,7 +12,7 @@ const images = computed(() => JSON.parse(props.galleryImagesJson))
 </script>
 
 <template>
-  <div class="row row-cols-4 g-2">
+  <div class="row row-cols-4 row-cols-xl-6 g-2">
     <div
       class="col p-0 m-0 gallery-image-thumbnail"
       v-for="image in images"

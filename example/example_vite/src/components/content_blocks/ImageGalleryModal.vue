@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, watch, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
-import { _stopAllMedia, toggleModal } from '../../_utils.js'
+import { _stopAllMedia, toggleModal, resetTooltips } from '../../_utils.js'
 import { useDisplayImageGalleryModalStore } from '../../stores/display.js'
 import { Tooltip, Carousel } from 'bootstrap'
 
@@ -33,6 +33,7 @@ const setupCarousel = () => {
       galleryIndex.value = event.to
     })
   }
+  resetTooltips(modalRef.value)
 }
 watch(shown, (newValue, oldValue) => {
   if (newValue !== oldValue) {
@@ -50,10 +51,6 @@ onMounted(() => {
   modalRef.value.addEventListener('shown.bs.modal', () => shown.value = true)
   // setup carousel
   nextTick(setupCarousel)
-  // setup tooltips (if needed)
-  modalRef.value.querySelectorAll('carousel-caption i').forEach(
-    (iconEl) => Tooltip.getOrCreateInstance(iconEl).hide()
-  )
 })
 </script>
 

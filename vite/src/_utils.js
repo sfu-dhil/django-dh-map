@@ -1,3 +1,4 @@
+import { Tooltip } from 'bootstrap'
 
 export const _getPaginatedApiResources = async (request) => {
   let pagedRequest = request
@@ -27,5 +28,13 @@ export const _getApiResource = async (request) => {
     return await response.json()
   } catch (error) {
     console.error('Error fetching data:', error)
+  }
+}
+
+export const resetTooltips = (parentEl) => {
+  if (parentEl) {
+    parentEl.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(
+      (tooltipTriggerEl) => Tooltip.getOrCreateInstance(tooltipTriggerEl, {container: parentEl}).hide()
+    )
   }
 }

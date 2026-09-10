@@ -1,8 +1,8 @@
 <script setup>
 import { reactive, ref, onMounted, onUnmounted, computed, watch, nextTick, toRaw } from 'vue'
-import { UseFullscreen, UseMouseInElement } from '@vueuse/components'
-import { Tooltip } from 'bootstrap'
-import { _getPaginatedApiResources, _getApiResource } from '../_utils.js'
+import { UseMouseInElement } from '@vueuse/components'
+import { useFullscreen } from '@vueuse/core'
+import { _getPaginatedApiResources, _getApiResource, resetTooltips } from '../_utils.js'
 import { EditModeActionTypes, EditModeAddActionTypes } from './_editActions.js'
 import { MapGeojsonResourceTypes, IconResourceTypes } from '../_resourceTypes.js'
 
@@ -31,6 +31,10 @@ if (map.properties.initial) {
 }
 
 const pannellumWrapperRef = ref(null)
+const { isFullscreen, toggle: toggleFullscreen } = useFullscreen(pannellumWrapperRef)
+watch(isFullscreen, (oldValue, newValue) => {
+  if (newValue !== oldValue) { nextTick(() => resetTooltips(pannellumWrapperRef.value)) }
+})
 const pannellumRef = ref(null)
 const animationFrameId = ref(null)
 const hoverFeatureTooltipLabel = ref(null)
@@ -219,6 +223,7 @@ watch(editModeAction, (newValue, oldValue) => {
   if (newValue !== oldValue) {
     resetPannellumEvents()
     resetHotSpots()
+    nextTick(() => resetTooltips(pannellumWrapperRef.value))
   }
 })
 const editModeAddAction = ref(null)
@@ -382,9 +387,7 @@ const resetViewToInitial = () => {
 }
 // end edit actions
 onMounted(() => {
-  pannellumWrapperRef.value.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(
-    (tooltipTriggerEl) => Tooltip.getOrCreateInstance(tooltipTriggerEl, {container: pannellumWrapperRef.value}).hide()
-  )
+  nextTick(() => resetTooltips(pannellumWrapperRef.value))
   loadPannellum()
   animationFrameId.value = window.requestAnimationFrame(animationFrameLoop)
 })
@@ -398,172 +401,170 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <UseFullscreen v-slot="{ isFullscreen, toggle: toggleFullscreen }">
-    <UseMouseInElement v-slot="{ elementX, elementY }">
-      <div ref="pannellumWrapperRef" class="z-0 position-absolute top-0 bottom-0 start-0 end-0">
-        <div class="z-3 position-absolute bottom-0 start-50 translate-middle-x btn-group">
-          <button @click="panUp"
-            type="button" class="btn btn-link text-light link-underline-opacity-0"
-            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Pan Up"
+  <UseMouseInElement v-slot="{ elementX, elementY }">
+    <div ref="pannellumWrapperRef" class="z-0 position-absolute top-0 bottom-0 start-0 end-0">
+      <div class="z-3 position-absolute bottom-0 start-50 translate-middle-x btn-group">
+        <button @click="panUp"
+          type="button" class="btn btn-link text-light link-underline-opacity-0"
+          data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Pan Up"
+        >
+          <i class="bi bi-arrow-up"></i>
+        </button>
+        <button @click="panDown"
+          type="button" class="btn btn-link text-light link-underline-opacity-0"
+          data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Pan Down"
+        >
+          <i class="bi bi-arrow-down"></i>
+        </button>
+        <button @click="panLeft"
+          type="button" class="btn btn-link text-light link-underline-opacity-0"
+          data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Pan Left"
+        >
+          <i class="bi bi-arrow-left"></i>
+        </button>
+        <button @click="panRight"
+          type="button" class="btn btn-link text-light link-underline-opacity-0"
+          data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Pan Right"
+        >
+          <i class="bi bi-arrow-right"></i>
+        </button>
+        <button @click="zoomIn"
+          type="button" class="btn btn-link text-light link-underline-opacity-0"
+          data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Zoom In"
+        >
+          <i class="bi bi-plus-lg"></i>
+        </button>
+        <button @click="zoomOut"
+          type="button" class="btn btn-link text-light link-underline-opacity-0"
+          data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Zoom Out"
+        >
+          <i class="bi bi-dash-lg"></i>
+        </button>
+      </div>
+      <div class="z-3 position-absolute top-0 end-0 btn-group-vertical">
+        <button @click="toggleFullscreen"
+          type="button" class="btn btn-link text-light link-underline-opacity-0"
+          data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Toggle Fullscreen Mode"
+        >
+          <i v-if="!isFullscreen" class="bi bi-fullscreen"></i>
+          <i v-if="isFullscreen" class="bi bi-fullscreen-exit"></i>
+        </button>
+      </div>
+              <div class="z-3 position-absolute top-0 start-0" v-if="editMode">
+        <div class="btn-group edit-actions" role="group">
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Move Feature"
+            :class="{ active: isMoveAction }"
+            @click="() => toggleEditModeAction(EditModeActionTypes.move)"
           >
-            <i class="bi bi-arrow-up"></i>
+            <i class="bi bi-arrows-move"></i>
           </button>
-          <button @click="panDown"
-            type="button" class="btn btn-link text-light link-underline-opacity-0"
-            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Pan Down"
-          >
-            <i class="bi bi-arrow-down"></i>
-          </button>
-          <button @click="panLeft"
-            type="button" class="btn btn-link text-light link-underline-opacity-0"
-            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Pan Left"
-          >
-            <i class="bi bi-arrow-left"></i>
-          </button>
-          <button @click="panRight"
-            type="button" class="btn btn-link text-light link-underline-opacity-0"
-            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Pan Right"
-          >
-            <i class="bi bi-arrow-right"></i>
-          </button>
-          <button @click="zoomIn"
-            type="button" class="btn btn-link text-light link-underline-opacity-0"
-            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Zoom In"
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Add Feature"
+            :class="{ active: isAddAction }"
+            @click="() => toggleEditModeAction(EditModeActionTypes.add)"
           >
             <i class="bi bi-plus-lg"></i>
           </button>
-          <button @click="zoomOut"
-            type="button" class="btn btn-link text-light link-underline-opacity-0"
-            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Zoom Out"
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Modify Initial View"
+            :class="{ active: isInitialViewAction }"
+            @click="() => toggleEditModeAction(EditModeActionTypes.initialView)"
           >
-            <i class="bi bi-dash-lg"></i>
+            <i class="fa-solid fa-panorama"></i>
+          </button>
+          <button type="button" class="btn btn-danger"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Remove Feature"
+            :class="{ active: isRemoveAction }"
+            @click="() => toggleEditModeAction(EditModeActionTypes.remove)"
+          >
+            <i class="bi bi-trash"></i>
           </button>
         </div>
-        <div class="z-3 position-absolute top-0 end-0 btn-group-vertical">
-          <button @click="toggleFullscreen"
-            type="button" class="btn btn-link text-light link-underline-opacity-0"
-            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Toggle Fullscreen Mode"
+        <br />
+        <div class="btn-group edit-actions" role="group" v-if="isAddAction">
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Add Feature"
+            :class="{ active: isAddFeatureAction }"
+            @click="() => toggleEditModeAddAction(EditModeAddActionTypes.feature)"
           >
-            <i v-if="!isFullscreen" class="bi bi-fullscreen"></i>
-            <i v-if="isFullscreen" class="bi bi-fullscreen-exit"></i>
+            <i class="bi bi-pin-map"></i>
+          </button>
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Add Map Transition"
+            :class="{ active: isAddMapAction }"
+            @click="() => toggleEditModeAddAction(EditModeAddActionTypes.map)"
+          >
+            <i class="fa-solid fa-map-location-dot"></i>
+          </button>
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Add Label"
+            :class="{ active: isAddLabelAction }"
+            @click="() => toggleEditModeAddAction(EditModeAddActionTypes.label)"
+          >
+            <i class="fa-solid fa-heading"></i>
           </button>
         </div>
-                <div class="z-3 position-absolute top-0 start-0" v-if="editMode">
-          <div class="btn-group edit-actions" role="group">
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Move Feature"
-              :class="{ active: isMoveAction }"
-              @click="() => toggleEditModeAction(EditModeActionTypes.move)"
-            >
-              <i class="bi bi-arrows-move"></i>
-            </button>
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Add Feature"
-              :class="{ active: isAddAction }"
-              @click="() => toggleEditModeAction(EditModeActionTypes.add)"
-            >
-              <i class="bi bi-plus-lg"></i>
-            </button>
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Modify Initial View"
-              :class="{ active: isInitialViewAction }"
-              @click="() => toggleEditModeAction(EditModeActionTypes.initialView)"
-            >
-              <i class="fa-solid fa-panorama"></i>
-            </button>
-            <button type="button" class="btn btn-danger"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Remove Feature"
-              :class="{ active: isRemoveAction }"
-              @click="() => toggleEditModeAction(EditModeActionTypes.remove)"
-            >
-              <i class="bi bi-trash"></i>
-            </button>
-          </div>
-          <br />
-          <div class="btn-group edit-actions" role="group" v-if="isAddAction">
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Add Feature"
-              :class="{ active: isAddFeatureAction }"
-              @click="() => toggleEditModeAddAction(EditModeAddActionTypes.feature)"
-            >
-              <i class="bi bi-pin-map"></i>
-            </button>
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Add Map Transition"
-              :class="{ active: isAddMapAction }"
-              @click="() => toggleEditModeAddAction(EditModeAddActionTypes.map)"
-            >
-              <i class="fa-solid fa-map-location-dot"></i>
-            </button>
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Add Label"
-              :class="{ active: isAddLabelAction }"
-              @click="() => toggleEditModeAddAction(EditModeAddActionTypes.label)"
-            >
-              <i class="fa-solid fa-heading"></i>
-            </button>
-          </div>
-          <div class="btn-group edit-actions" role="group" v-if="isInitialViewAction">
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Set Initial View to Current Viewport"
-              @click="() => setInitialView()"
-            >
-              <i class="bi bi-textarea"></i>
-            </button>
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Reset Viewport to Initial View"
-              @click="() => resetViewToInitial()"
-            >
-              <i class="fa-solid fa-arrow-rotate-left"></i>
-            </button>
-            <button type="button" class="btn btn-danger"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Set Initial View to Default Values"
-              @click="() => setInitialViewToDefault()"
-            >
-              <i class="fa-solid fa-arrows-rotate"></i>
-            </button>
-          </div>
-          <v-select
-            v-if="isAddFeatureAction"
-            :options="features" label="title" v-model="selectedAddFeature"
-            placeholder="Add feature for..." class="select-feature"
-            :appendToBody="!isFullscreen"
-          ></v-select>
-          <v-select
-            v-if="isAddMapAction"
-            :options="listedMaps" label="label" v-model="selectedAddMap"
-            placeholder="Add map transition to..." class="select-map"
-            :appendToBody="!isFullscreen"
-          ></v-select>
+        <div class="btn-group edit-actions" role="group" v-if="isInitialViewAction">
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Set Initial View to Current Viewport"
+            @click="() => setInitialView()"
+          >
+            <i class="bi bi-textarea"></i>
+          </button>
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Reset Viewport to Initial View"
+            @click="() => resetViewToInitial()"
+          >
+            <i class="fa-solid fa-arrow-rotate-left"></i>
+          </button>
+          <button type="button" class="btn btn-danger"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Set Initial View to Default Values"
+            @click="() => setInitialViewToDefault()"
+          >
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
         </div>
-        <span
-          v-if="hoverFeatureTooltipLabel"
-          class="z-2 position-absolute badge text-bg-primary"
-          :style="{ left: `${elementX+10}px`, top: `${elementY+5}px` }"
-          v-html="hoverFeatureTooltipLabel"
-        />
-        <div class="z-3 position-absolute bottom-0 start-0" v-if="editMode && !!mouseCoords">
-          <div class="ms-1 mb-1">
-            <div class="badge text-bg-light mb-1" v-html="`Yaw: ${mouseCoords[1].toFixed(10)}`" /><br />
-            <div class="badge text-bg-light mb-1" v-html="`Pitch: ${mouseCoords[0].toFixed(10)}`" /><br />
-            <div class="badge text-bg-light" v-html="`HFOV: ${hfov.toFixed(10)}`" />
-          </div>
-        </div>
-        <div class="z-3 position-absolute bottom-0 end-0 d-flex flex-column">
-          <span class="badge text-bg-light ms-auto me-1 mb-1" v-if="!!map.attributions" v-html="map.attributions" />
-          <span class="badge text-bg-light ms-auto me-1 mb-1" v-if="!!map.date_taken" v-html="`Taken on ${new Date(map.date_taken).toLocaleDateString()}`" />
-        </div>
-        <div
-          ref="pannellumRef"
-          class="z-1 vue-pannellum"
-          @mousemove="(event) => mouseCoords = viewer.mouseEventToCoords(event)"
-          @mouseup="onMouseUp"
-          @touchmove="onTouchMove"
-          @touchend="onTouchEnd"
-        ></div>
+        <v-select
+          v-if="isAddFeatureAction"
+          :options="features" label="title" v-model="selectedAddFeature"
+          placeholder="Add feature for..." class="select-feature"
+          :appendToBody="!isFullscreen"
+        ></v-select>
+        <v-select
+          v-if="isAddMapAction"
+          :options="listedMaps" label="label" v-model="selectedAddMap"
+          placeholder="Add map transition to..." class="select-map"
+          :appendToBody="!isFullscreen"
+        ></v-select>
       </div>
-    </UseMouseInElement>
-  </UseFullscreen>
+      <span
+        v-if="hoverFeatureTooltipLabel"
+        class="z-2 position-absolute badge text-bg-primary"
+        :style="{ left: `${elementX+10}px`, top: `${elementY+5}px` }"
+        v-html="hoverFeatureTooltipLabel"
+      />
+      <div class="z-3 position-absolute bottom-0 start-0" v-if="editMode && !!mouseCoords">
+        <div class="ms-1 mb-1">
+          <div class="badge text-bg-light mb-1" v-html="`Yaw: ${mouseCoords[1].toFixed(10)}`" /><br />
+          <div class="badge text-bg-light mb-1" v-html="`Pitch: ${mouseCoords[0].toFixed(10)}`" /><br />
+          <div class="badge text-bg-light" v-html="`HFOV: ${hfov.toFixed(10)}`" />
+        </div>
+      </div>
+      <div class="z-3 position-absolute bottom-0 end-0 d-flex flex-column">
+        <span class="badge text-bg-light ms-auto me-1 mb-1" v-if="!!map.attributions" v-html="map.attributions" />
+        <span class="badge text-bg-light ms-auto me-1 mb-1" v-if="!!map.date_taken" v-html="`Taken on ${new Date(map.date_taken).toLocaleDateString()}`" />
+      </div>
+      <div
+        ref="pannellumRef"
+        class="z-1 vue-pannellum"
+        @mousemove="(event) => mouseCoords = viewer.mouseEventToCoords(event)"
+        @mouseup="onMouseUp"
+        @touchmove="onTouchMove"
+        @touchend="onTouchEnd"
+      ></div>
+    </div>
+  </UseMouseInElement>
 </template>
 
 <style lang="scss" scoped>

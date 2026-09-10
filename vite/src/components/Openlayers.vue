@@ -1,7 +1,6 @@
 <script setup>
 import { ref, inject, onMounted, nextTick, computed, watch, toRaw } from 'vue'
-import { UseFullscreen } from '@vueuse/components'
-import { Tooltip } from 'bootstrap'
+import { useFullscreen } from '@vueuse/core'
 import { Style, Text, Fill, Stroke, Circle, Icon } from 'ol/style'
 import { getCenter, getSize, boundingExtent } from 'ol/extent'
 import { toLonLat } from 'ol/proj'
@@ -10,7 +9,7 @@ import { TileGrid } from 'ol/tilegrid'
 import { easeOut } from 'ol/easing'
 import { Point } from 'ol/geom'
 import { GeoJSON } from 'ol/format'
-import { _getPaginatedApiResources } from '../_utils.js'
+import { _getPaginatedApiResources, resetTooltips } from '../_utils.js'
 import { EditModeActionTypes, EditModeAddActionTypes, EditModeBoundingBoxActionTypes } from './_editActions.js'
 import { MapGeojsonResourceTypes, IconResourceTypes, MapResourceTypes } from '../_resourceTypes.js'
 
@@ -73,6 +72,11 @@ const overheadMapTileGrid = computed(() => {
   }
 })
 
+const mapWrapperRef = ref(null)
+const { isFullscreen, toggle: toggleFullscreen } = useFullscreen(mapWrapperRef)
+watch(isFullscreen, (oldValue, newValue) => {
+  if (newValue !== oldValue) { nextTick(() => resetTooltips(mapWrapperRef.value)) }
+})
 const mapRef = ref(null)
 const sourceVectorRef = ref(null)
 const hoverFeatureTooltipParams = ref(null)
@@ -401,19 +405,12 @@ const featuresLoadend = (event) => emitUpdatedGeoJsonObject()
 const {
   click: clickCondition,
 } = inject('ol-selectconditions')
-const resetTooltips = () => {
-  nextTick(() => {
-    mapRef.value.map.getTargetElement().querySelectorAll('[data-bs-toggle="tooltip"]').forEach(
-      (tooltipTriggerEl) => Tooltip.getOrCreateInstance(tooltipTriggerEl, {container: mapRef.value.map.getTargetElement()}).hide()
-    )
-  })
-}
 watch(editModeAction, (oldValue, newValue) => {
-  if (newValue != oldValue) { resetTooltips() }
+  if (newValue != oldValue) { nextTick(() => resetTooltips(mapWrapperRef.value)) }
 })
 onMounted(() => {
   resetViewToInitial()
-  resetTooltips()
+  nextTick(() => resetTooltips(mapWrapperRef.value))
   mapRef.value.map.on('pointermove', (event) => {
     const openLayersFeature = mapRef.value.map.forEachFeatureAtPixel(event.pixel, (f) => f)
     if (openLayersFeature) {
@@ -438,294 +435,292 @@ onMounted(() => {
 </script>
 
 <template>
-  <UseFullscreen v-slot="{ isFullscreen, toggle: toggleFullscreen }">
-    <div class="z-0 position-absolute top-0 bottom-0 start-0 end-0 overflow-hidden">
-      <ol-map
-        ref="mapRef"
-        class="openlayers-map z-1 w-100 h-100 position-absolute"
-        :loadTilesWhileAnimating="true"
-        :loadTilesWhileInteracting="true"
-        :controls="[]"
-      >
+  <div ref="mapWrapperRef" class="z-0 position-absolute top-0 bottom-0 start-0 end-0 overflow-hidden">
+    <ol-map
+      ref="mapRef"
+      class="openlayers-map z-1 w-100 h-100 position-absolute"
+      :loadTilesWhileAnimating="true"
+      :loadTilesWhileInteracting="true"
+      :controls="[]"
+    >
 
-        <ol-view
-          :minZoom="map.min_zoom"
-          :maxZoom="map.max_zoom"
-          :projection="projection"
-          :extent="editMode ? baseUnboundExtent : extent"
-          :constrainOnlyCenter="false"
-          :smoothExtentConstraint="true"
-          @change:center="updateCenter"
-          @change:resolution="updateZoom"
-          @change:rotation="updateRotation"
-        />
+      <ol-view
+        :minZoom="map.min_zoom"
+        :maxZoom="map.max_zoom"
+        :projection="projection"
+        :extent="editMode ? baseUnboundExtent : extent"
+        :constrainOnlyCenter="false"
+        :smoothExtentConstraint="true"
+        @change:center="updateCenter"
+        @change:resolution="updateZoom"
+        @change:rotation="updateRotation"
+      />
 
-        <ol-tile-layer v-if="map.resourcetype === MapResourceTypes.xyzMap">
-          <ol-source-xyz :url="map.url" :attributions="!!map.attributions ? map.attributions : undefined" />
-        </ol-tile-layer>
-        <ol-tile-layer v-if="map.resourcetype === MapResourceTypes.overheadImageMap">
-          <ol-source-xyz :url="`${websiteOrigin}${map.tiles_dir}/{z}/{x}/{y}.${map.tile_format}`" :tileGrid="overheadMapTileGrid" :projection="projection" />
-        </ol-tile-layer>
+      <ol-tile-layer v-if="map.resourcetype === MapResourceTypes.xyzMap">
+        <ol-source-xyz :url="map.url" :attributions="!!map.attributions ? map.attributions : undefined" />
+      </ol-tile-layer>
+      <ol-tile-layer v-if="map.resourcetype === MapResourceTypes.overheadImageMap">
+        <ol-source-xyz :url="`${websiteOrigin}${map.tiles_dir}/{z}/{x}/{y}.${map.tile_format}`" :tileGrid="overheadMapTileGrid" :projection="projection" />
+      </ol-tile-layer>
 
-        <ol-vector-layer>
-          <ol-source-vector
-            ref="sourceVectorRef"
-            :url="`${websiteOrigin}/api/admin/maps/${mapId}/geojson`" :format="geoJson"
-            @featuresloadend="featuresLoadend"
-          >
-            <ol-interaction-modify v-if="isMoveAction"
-              :filter="isMapFeatureFilter" @modifyend="modifyMoveExistingPointEnd"
-            />
-            <ol-interaction-draw v-if="isAddFeatureAction && selectedAddFeature"
-              type="MultiPoint" @drawend="drawNewFeatureEnd"
-            />
-            <ol-interaction-draw v-if="isAddMapAction && selectedAddMap"
-              type="MultiPoint" @drawend="drawNewMapEnd"
-            />
-            <ol-interaction-draw v-if="isAddLabelAction"
-              type="Point" @drawend="drawNewLabelEnd"
-            />
-            <ol-interaction-select v-if="isRemoveAction"
-              :condition="clickCondition" :filter="isMapFeatureFilter" @select="removedSelectedFeaturePoint"
-            />
-            <ol-style :overrideStyleFunction="overrideOpenLayersFeatureStyle"></ol-style>
-          </ol-source-vector>
-        </ol-vector-layer>
-        <ol-vector-layer v-if="editMode">
-          <ol-source-vector>
-            <ol-feature v-if="boundingBox">
-              <ol-geom-polygon :coordinates="boundingBox"/>
-              <ol-style>
-                <ol-style-stroke color="red" :width="2"></ol-style-stroke>
-              </ol-style>
-            </ol-feature>
-            <ol-interaction-transform v-if="isBoundingBoxMoveAction"
-              :filter="isBoundingBoxFeatureFilter"
-              :scale="true" :rotate="true" :translate="true" :stretch="true" :keepAspectRatio="false"
-              @rotateend="transformBoundingBoxEnd"
-              @translateend="transformBoundingBoxEnd"
-              @scaleend="transformBoundingBoxEnd"
-            />
-            <ol-interaction-drag-box v-if="isBoundingBoxAddAction"
-              @boxend="createBoundingBoxEnd"
-            />
-          </ol-source-vector>
-        </ol-vector-layer>
-
-        <ol-overlay
-          v-if="hoverFeatureTooltipParams"
-          :position="hoverFeatureTooltipParams.coords"
-          :positioning="bottom-center"
-          :stopEvent="false"
-          :insertFirst="false"
-          :offset="[10, 0]"
+      <ol-vector-layer>
+        <ol-source-vector
+          ref="sourceVectorRef"
+          :url="`${websiteOrigin}/api/admin/maps/${mapId}/geojson`" :format="geoJson"
+          @featuresloadend="featuresLoadend"
         >
-          <span class="badge text-bg-primary" v-html="hoverFeatureTooltipParams.label" />
-        </ol-overlay>
+          <ol-interaction-modify v-if="isMoveAction"
+            :filter="isMapFeatureFilter" @modifyend="modifyMoveExistingPointEnd"
+          />
+          <ol-interaction-draw v-if="isAddFeatureAction && selectedAddFeature"
+            type="MultiPoint" @drawend="drawNewFeatureEnd"
+          />
+          <ol-interaction-draw v-if="isAddMapAction && selectedAddMap"
+            type="MultiPoint" @drawend="drawNewMapEnd"
+          />
+          <ol-interaction-draw v-if="isAddLabelAction"
+            type="Point" @drawend="drawNewLabelEnd"
+          />
+          <ol-interaction-select v-if="isRemoveAction"
+            :condition="clickCondition" :filter="isMapFeatureFilter" @select="removedSelectedFeaturePoint"
+          />
+          <ol-style :overrideStyleFunction="overrideOpenLayersFeatureStyle"></ol-style>
+        </ol-source-vector>
+      </ol-vector-layer>
+      <ol-vector-layer v-if="editMode">
+        <ol-source-vector>
+          <ol-feature v-if="boundingBox">
+            <ol-geom-polygon :coordinates="boundingBox"/>
+            <ol-style>
+              <ol-style-stroke color="red" :width="2"></ol-style-stroke>
+            </ol-style>
+          </ol-feature>
+          <ol-interaction-transform v-if="isBoundingBoxMoveAction"
+            :filter="isBoundingBoxFeatureFilter"
+            :scale="true" :rotate="true" :translate="true" :stretch="true" :keepAspectRatio="false"
+            @rotateend="transformBoundingBoxEnd"
+            @translateend="transformBoundingBoxEnd"
+            @scaleend="transformBoundingBoxEnd"
+          />
+          <ol-interaction-drag-box v-if="isBoundingBoxAddAction"
+            @boxend="createBoundingBoxEnd"
+          />
+        </ol-source-vector>
+      </ol-vector-layer>
 
-        <ol-interaction-drag-rotate-and-zoom />
-        <div class="z-3 position-absolute bottom-0 start-50 translate-middle-x btn-group text-center">
-          <button @click="panUp"
-            type="button" class="btn btn-link text-light link-underline-opacity-0"
-            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Pan Up"
+      <ol-overlay
+        v-if="hoverFeatureTooltipParams"
+        :position="hoverFeatureTooltipParams.coords"
+        :positioning="bottom-center"
+        :stopEvent="false"
+        :insertFirst="false"
+        :offset="[10, 0]"
+      >
+        <span class="badge text-bg-primary" v-html="hoverFeatureTooltipParams.label" />
+      </ol-overlay>
+
+      <ol-interaction-drag-rotate-and-zoom />
+      <div class="z-3 position-absolute bottom-0 start-50 translate-middle-x btn-group text-center">
+        <button @click="panUp"
+          type="button" class="btn btn-link text-light link-underline-opacity-0"
+          data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Pan Up"
+        >
+          <i class="bi bi-arrow-up"></i>
+        </button>
+        <button @click="panDown"
+          type="button" class="btn btn-link text-light link-underline-opacity-0"
+          data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Pan Down"
+        >
+          <i class="bi bi-arrow-down"></i>
+        </button>
+        <button @click="panLeft"
+          type="button" class="btn btn-link text-light link-underline-opacity-0"
+          data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Pan Left"
+        >
+          <i class="bi bi-arrow-left"></i>
+        </button>
+        <button @click="panRight"
+          type="button" class="btn btn-link text-light link-underline-opacity-0"
+          data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Pan Right"
+        >
+          <i class="bi bi-arrow-right"></i>
+        </button>
+        <button @click="zoomIn"
+          type="button" class="btn btn-link text-light link-underline-opacity-0"
+          data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Zoom In"
+        >
+          <i class="bi bi-plus-lg"></i>
+        </button>
+        <button @click="zoomOut"
+          type="button" class="btn btn-link text-light link-underline-opacity-0"
+          data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Zoom Out"
+        >
+          <i class="bi bi-dash-lg"></i>
+        </button>
+      </div>
+      <div class="z-3 position-absolute top-0 end-0 btn-group-vertical text-center">
+        <button @click="toggleFullscreen"
+          type="button" class="btn btn-link text-light link-underline-opacity-0"
+          data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Toggle Fullscreen Mode"
+        >
+          <i v-if="!isFullscreen" class="bi bi-fullscreen"></i>
+          <i v-if="isFullscreen" class="bi bi-fullscreen-exit"></i>
+        </button>
+        <button @click="resetRotation"
+          type="button" class="rotation-btn btn btn-link text-light link-underline-opacity-0"
+          :class="{'d-none': rotation === (initial?.rotation || 0) }"
+          data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Reset Rotation"
+        >
+          <i
+            class="rotation-correction fa-solid fa-compass"
+            :style="{
+              'transform': `rotate(${(315 + (rotation - (initial?.rotation || 0)) * (180 / Math.PI)) % 360}deg)`
+            }"
+          ></i>
+        </button>
+      </div>
+      <div class="z-3 position-absolute top-0 start-0" v-if="editMode">
+        <div class="btn-group edit-actions" role="group">
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Move Feature"
+            :class="{ active: isMoveAction }"
+            @click="() => toggleEditModeAction(EditModeActionTypes.move)"
           >
-            <i class="bi bi-arrow-up"></i>
+            <i class="bi bi-arrows-move"></i>
           </button>
-          <button @click="panDown"
-            type="button" class="btn btn-link text-light link-underline-opacity-0"
-            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Pan Down"
-          >
-            <i class="bi bi-arrow-down"></i>
-          </button>
-          <button @click="panLeft"
-            type="button" class="btn btn-link text-light link-underline-opacity-0"
-            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Pan Left"
-          >
-            <i class="bi bi-arrow-left"></i>
-          </button>
-          <button @click="panRight"
-            type="button" class="btn btn-link text-light link-underline-opacity-0"
-            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Pan Right"
-          >
-            <i class="bi bi-arrow-right"></i>
-          </button>
-          <button @click="zoomIn"
-            type="button" class="btn btn-link text-light link-underline-opacity-0"
-            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Zoom In"
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Add Feature"
+            :class="{ active: isAddAction }"
+            @click="() => toggleEditModeAction(EditModeActionTypes.add)"
           >
             <i class="bi bi-plus-lg"></i>
           </button>
-          <button @click="zoomOut"
-            type="button" class="btn btn-link text-light link-underline-opacity-0"
-            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Zoom Out"
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Modify Bounding Box"
+            :class="{ active: isBoundingBoxAction }"
+            @click="() => toggleEditModeAction(EditModeActionTypes.boundingBox)"
           >
-            <i class="bi bi-dash-lg"></i>
+            <i class="bi bi-bounding-box"></i>
+          </button>
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Modify Initial View"
+            :class="{ active: isInitialViewAction }"
+            @click="() => toggleEditModeAction(EditModeActionTypes.initialView)"
+          >
+            <i class="fa-solid fa-panorama"></i>
+          </button>
+          <button type="button" class="btn btn-danger"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Remove Feature"
+            :class="{ active: isRemoveAction }"
+            @click="() => toggleEditModeAction(EditModeActionTypes.remove)"
+          >
+            <i class="bi bi-trash"></i>
           </button>
         </div>
-        <div class="z-3 position-absolute top-0 end-0 btn-group-vertical text-center">
-          <button @click="() => { toggleFullscreen(); resetTooltips() }"
-            type="button" class="btn btn-link text-light link-underline-opacity-0"
-            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Toggle Fullscreen Mode"
+        <br />
+        <div class="btn-group edit-actions" role="group" v-if="isAddAction">
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Add Feature"
+            :class="{ active: isAddFeatureAction }"
+            @click="() => toggleEditModeAddAction(EditModeAddActionTypes.feature)"
           >
-            <i v-if="!isFullscreen" class="bi bi-fullscreen"></i>
-            <i v-if="isFullscreen" class="bi bi-fullscreen-exit"></i>
+            <i class="bi bi-pin-map"></i>
           </button>
-          <button @click="resetRotation"
-            type="button" class="rotation-btn btn btn-link text-light link-underline-opacity-0"
-            :class="{'d-none': rotation === (initial?.rotation || 0) }"
-            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Reset Rotation"
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Add Map Transition"
+            :class="{ active: isAddMapAction }"
+            @click="() => toggleEditModeAddAction(EditModeAddActionTypes.map)"
           >
-            <i
-              class="rotation-correction fa-solid fa-compass"
-              :style="{
-                'transform': `rotate(${(315 + (rotation - (initial?.rotation || 0)) * (180 / Math.PI)) % 360}deg)`
-              }"
-            ></i>
+            <i class="fa-solid fa-map-location-dot"></i>
+          </button>
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Add Label"
+            :class="{ active: isAddLabelAction }"
+            @click="() => toggleEditModeAddAction(EditModeAddActionTypes.label)"
+          >
+            <i class="fa-solid fa-heading"></i>
           </button>
         </div>
-        <div class="z-3 position-absolute top-0 start-0" v-if="editMode">
-          <div class="btn-group edit-actions" role="group">
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Move Feature"
-              :class="{ active: isMoveAction }"
-              @click="() => toggleEditModeAction(EditModeActionTypes.move)"
-            >
-              <i class="bi bi-arrows-move"></i>
-            </button>
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Add Feature"
-              :class="{ active: isAddAction }"
-              @click="() => toggleEditModeAction(EditModeActionTypes.add)"
-            >
-              <i class="bi bi-plus-lg"></i>
-            </button>
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Modify Bounding Box"
-              :class="{ active: isBoundingBoxAction }"
-              @click="() => toggleEditModeAction(EditModeActionTypes.boundingBox)"
-            >
-              <i class="bi bi-bounding-box"></i>
-            </button>
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Modify Initial View"
-              :class="{ active: isInitialViewAction }"
-              @click="() => toggleEditModeAction(EditModeActionTypes.initialView)"
-            >
-              <i class="fa-solid fa-panorama"></i>
-            </button>
-            <button type="button" class="btn btn-danger"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Remove Feature"
-              :class="{ active: isRemoveAction }"
-              @click="() => toggleEditModeAction(EditModeActionTypes.remove)"
-            >
-              <i class="bi bi-trash"></i>
-            </button>
-          </div>
-          <br />
-          <div class="btn-group edit-actions" role="group" v-if="isAddAction">
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Add Feature"
-              :class="{ active: isAddFeatureAction }"
-              @click="() => toggleEditModeAddAction(EditModeAddActionTypes.feature)"
-            >
-              <i class="bi bi-pin-map"></i>
-            </button>
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Add Map Transition"
-              :class="{ active: isAddMapAction }"
-              @click="() => toggleEditModeAddAction(EditModeAddActionTypes.map)"
-            >
-              <i class="fa-solid fa-map-location-dot"></i>
-            </button>
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Add Label"
-              :class="{ active: isAddLabelAction }"
-              @click="() => toggleEditModeAddAction(EditModeAddActionTypes.label)"
-            >
-              <i class="fa-solid fa-heading"></i>
-            </button>
-          </div>
-          <div class="btn-group edit-actions" role="group" v-if="isBoundingBoxAction">
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Add/Replace Bounding Box"
-              :class="{ active: isBoundingBoxAddAction }"
-              @click="() => toggleEditBoundingBoxAction(EditModeBoundingBoxActionTypes.add)"
-            >
-              <i class="bi bi-plus-lg"></i>
-            </button>
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Move Bounding Box"
-              :class="{ active: isBoundingBoxMoveAction }"
-              :disabled="!boundingBox"
-              @click="() => toggleEditBoundingBoxAction(EditModeBoundingBoxActionTypes.move)"
-            >
-              <i class="bi bi-arrows-move"></i>
-            </button>
-            <button type="button" class="btn btn-danger"
-              :disabled="!boundingBox"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Remove Bounding Box"
-              @click="removeBoundingBox"
-            >
-              <i class="bi bi-trash"></i>
-            </button>
-          </div>
-          <div class="btn-group edit-actions" role="group" v-if="isInitialViewAction">
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Set Initial View to Current Viewport"
-              @click="() => setInitialView()"
-            >
-              <i class="bi bi-textarea"></i>
-            </button>
-            <button type="button" class="btn btn-dark"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Reset Viewport to Initial View"
-              @click="() => resetViewToInitial()"
-            >
-              <i class="fa-solid fa-arrow-rotate-left"></i>
-            </button>
-            <button type="button" class="btn btn-danger"
-              data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Set Initial View to Default Values"
-              @click="() => setInitialViewToDefault()"
-            >
-              <i class="fa-solid fa-arrows-rotate"></i>
-            </button>
-          </div>
-          <v-select
-            v-if="isAddFeatureAction"
-            :options="features" label="title" v-model="selectedAddFeature"
-            placeholder="Add feature for..." class="select-feature"
-            :appendToBody="!isFullscreen"
-          ></v-select>
-          <v-select
-            v-if="isAddMapAction"
-            :options="listedMaps" label="label" v-model="selectedAddMap"
-            placeholder="Add map transition to..." class="select-map"
-            :appendToBody="!isFullscreen"
-          ></v-select>
+        <div class="btn-group edit-actions" role="group" v-if="isBoundingBoxAction">
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Add/Replace Bounding Box"
+            :class="{ active: isBoundingBoxAddAction }"
+            @click="() => toggleEditBoundingBoxAction(EditModeBoundingBoxActionTypes.add)"
+          >
+            <i class="bi bi-plus-lg"></i>
+          </button>
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Move Bounding Box"
+            :class="{ active: isBoundingBoxMoveAction }"
+            :disabled="!boundingBox"
+            @click="() => toggleEditBoundingBoxAction(EditModeBoundingBoxActionTypes.move)"
+          >
+            <i class="bi bi-arrows-move"></i>
+          </button>
+          <button type="button" class="btn btn-danger"
+            :disabled="!boundingBox"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Remove Bounding Box"
+            @click="removeBoundingBox"
+          >
+            <i class="bi bi-trash"></i>
+          </button>
         </div>
-        <div class="z-3 position-absolute bottom-0 start-0" v-if="editMode && !!mouseCoords">
-          <div class="ms-1 mb-1" v-if="map.feature_srid === 0">
-            <div class="badge text-bg-light mb-1" v-html="`X: ${mouseCoords[0].toFixed(10)}`" /><br />
-            <div class="badge text-bg-light mb-1" v-html="`Y: ${mouseCoords[1].toFixed(10)}`" /><br />
-            <div class="badge text-bg-light" v-html="`Zoom: ${zoom.toFixed(10)}`" />
-          </div>
-          <div class="ms-1 mb-1" v-if="map.feature_srid === 4326">
-            <div class="badge text-bg-light mb-1" v-html="`Lat: ${mouseCoords[1].toFixed(10)}`" /><br />
-            <div class="badge text-bg-light mb-1" v-html="`Long: ${mouseCoords[0].toFixed(10)}`" /><br />
-            <div class="badge text-bg-light" v-html="`Zoom: ${zoom.toFixed(10)}`" />
-          </div>
-          <div class="ms-1 mb-1" v-if="map.feature_srid === 3857">
-            <div class="badge text-bg-light mb-1" v-html="`Lat: ${toLonLat(mouseCoords)[1].toFixed(10)}`" /><br />
-            <div class="badge text-bg-light mb-1" v-html="`Long: ${toLonLat(mouseCoords)[0].toFixed(10)}`" /><br />
-            <div class="badge text-bg-light" v-html="`Zoom: ${zoom.toFixed(10)}`" />
-          </div>
+        <div class="btn-group edit-actions" role="group" v-if="isInitialViewAction">
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Set Initial View to Current Viewport"
+            @click="() => setInitialView()"
+          >
+            <i class="bi bi-textarea"></i>
+          </button>
+          <button type="button" class="btn btn-dark"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Reset Viewport to Initial View"
+            @click="() => resetViewToInitial()"
+          >
+            <i class="fa-solid fa-arrow-rotate-left"></i>
+          </button>
+          <button type="button" class="btn btn-danger"
+            data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Set Initial View to Default Values"
+            @click="() => setInitialViewToDefault()"
+          >
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
         </div>
-        <div class="z-3 position-absolute bottom-0 end-0 d-flex flex-column">
-          <span class="badge text-bg-light ms-auto me-1 mb-1" v-if="!!map.attributions" v-html="map.attributions" />
-          <span class="badge text-bg-light ms-auto me-1 mb-1" v-if="!!map.date_taken" v-html="`Taken on ${new Date(map.date_taken).toLocaleDateString()}`" />
+        <v-select
+          v-if="isAddFeatureAction"
+          :options="features" label="title" v-model="selectedAddFeature"
+          placeholder="Add feature for..." class="select-feature"
+          :appendToBody="!isFullscreen"
+        ></v-select>
+        <v-select
+          v-if="isAddMapAction"
+          :options="listedMaps" label="label" v-model="selectedAddMap"
+          placeholder="Add map transition to..." class="select-map"
+          :appendToBody="!isFullscreen"
+        ></v-select>
+      </div>
+      <div class="z-3 position-absolute bottom-0 start-0" v-if="editMode && !!mouseCoords">
+        <div class="ms-1 mb-1" v-if="map.feature_srid === 0">
+          <div class="badge text-bg-light mb-1" v-html="`X: ${mouseCoords[0].toFixed(10)}`" /><br />
+          <div class="badge text-bg-light mb-1" v-html="`Y: ${mouseCoords[1].toFixed(10)}`" /><br />
+          <div class="badge text-bg-light" v-html="`Zoom: ${zoom.toFixed(10)}`" />
         </div>
-      </ol-map>
-    </div>
-  </UseFullscreen>
+        <div class="ms-1 mb-1" v-if="map.feature_srid === 4326">
+          <div class="badge text-bg-light mb-1" v-html="`Lat: ${mouseCoords[1].toFixed(10)}`" /><br />
+          <div class="badge text-bg-light mb-1" v-html="`Long: ${mouseCoords[0].toFixed(10)}`" /><br />
+          <div class="badge text-bg-light" v-html="`Zoom: ${zoom.toFixed(10)}`" />
+        </div>
+        <div class="ms-1 mb-1" v-if="map.feature_srid === 3857">
+          <div class="badge text-bg-light mb-1" v-html="`Lat: ${toLonLat(mouseCoords)[1].toFixed(10)}`" /><br />
+          <div class="badge text-bg-light mb-1" v-html="`Long: ${toLonLat(mouseCoords)[0].toFixed(10)}`" /><br />
+          <div class="badge text-bg-light" v-html="`Zoom: ${zoom.toFixed(10)}`" />
+        </div>
+      </div>
+      <div class="z-3 position-absolute bottom-0 end-0 d-flex flex-column">
+        <span class="badge text-bg-light ms-auto me-1 mb-1" v-if="!!map.attributions" v-html="map.attributions" />
+        <span class="badge text-bg-light ms-auto me-1 mb-1" v-if="!!map.date_taken" v-html="`Taken on ${new Date(map.date_taken).toLocaleDateString()}`" />
+      </div>
+    </ol-map>
+  </div>
 </template>
 
 <style lang="scss" scoped>

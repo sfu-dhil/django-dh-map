@@ -2,9 +2,8 @@
 import { ref, watch, computed, nextTick, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { Tooltip } from 'bootstrap'
 import { useFullscreen } from '@vueuse/core'
-import { _stopAllMedia } from '../_utils.js'
+import { _stopAllMedia, resetTooltips } from '../_utils.js'
 import LoadingDots from './LoadingDots.vue'
 import { useMapsStore, useFeaturesStore } from '../stores/data.js'
 import { useDisplayStore, useDisplayOpenlayersStore, useDisplayPannellumStore } from '../stores/display.js'
@@ -30,18 +29,11 @@ const map = computed(() => objectId.value && mapObjectMap.value.has(objectId.val
 const mapWrapperRef = ref(null)
 const { isFullscreen, toggle: toggleFullscreen } = useFullscreen(mapWrapperRef)
 const mapRef = ref(null)
-const resetTooltips = () => {
-  nextTick(() => {
-    mapWrapperRef.value.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(
-      (tooltipTriggerEl) => Tooltip.getOrCreateInstance(tooltipTriggerEl, {container: mapWrapperRef.value}).hide()
-    )
-  })
-}
 watch(isFullscreen, (oldValue, newValue) => {
-  if (newValue != oldValue) { resetTooltips() }
+  if (newValue !== oldValue) { nextTick(() => resetTooltips(mapWrapperRef.value)) }
 })
 watch(mapRef, (oldValue, newValue) => {
-  if (newValue != oldValue) { resetTooltips() }
+  if (newValue !== oldValue) { nextTick(() => resetTooltips(mapWrapperRef.value)) }
 })
 watch(() => route.params.id, (newValue, oldValue) => {
   if (newValue !== oldValue) { _stopAllMedia() }
@@ -107,7 +99,7 @@ watch(() => route.params.id, (newValue, oldValue) => {
       <div v-if="mapRef" class="z-3 position-absolute top-0 end-0 btn-group-vertical text-center"
         :class="{ 'top-left-btn-group-offset': !isFullscreen }"
       >
-        <button @click="() => { toggleFullscreen(); resetTooltips() }"
+        <button @click="toggleFullscreen"
           type="button" class="btn btn-link text-light link-underline-opacity-0"
           data-bs-toggle="tooltip" data-bs-trigger="hover" data-bs-title="Toggle Fullscreen Mode"
         >

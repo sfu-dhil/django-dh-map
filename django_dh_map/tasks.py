@@ -118,9 +118,9 @@ def task_video_snapshot_generator(object_pk):
         if snapshot_path.exists() and snapshot_path.is_file():
             snapshot_path.unlink(missing_ok=True)
 
-        # use ffmpeg to generate get an interesting snapshot within 500 frames
+        # use ffmpeg to generate get an interesting snapshot within 400 frames
         subprocess.run(
-            f'{DH_MAP_FFMPEG} -i {original_path.absolute()} -filter:v thumbnail=500 -frames:v 1 {snapshot_path.absolute()}',
+            f'{DH_MAP_FFMPEG} -i {original_path.absolute()} -filter:v thumbnail=400 -frames:v 1 {snapshot_path.absolute()}',
             shell=True, check=True, capture_output=True, timeout=(60 * 1)
         )
 

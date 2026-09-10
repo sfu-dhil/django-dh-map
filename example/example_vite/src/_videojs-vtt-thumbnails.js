@@ -92,7 +92,7 @@ function vttThumbnails(options) {
             const percentage = (e.clientX - barRect.left) / barRect.width
             const time = percentage * player.duration()
 
-            document.querySelectorAll('.thumbnail').forEach(thumbnail => {
+            thumbnailContainer.querySelectorAll('.thumbnail').forEach(thumbnail => {
                 thumbnail.style.display = 'none'
             })
 
@@ -113,7 +113,7 @@ function vttThumbnails(options) {
     })
 
     function findClosestThumbnail(time) {
-        const thumbnails = document.querySelectorAll('.thumbnail')
+        const thumbnails = thumbnailContainer.querySelectorAll('.thumbnail')
         let closestThumbnail = null
         let minDifference = Infinity
 
