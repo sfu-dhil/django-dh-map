@@ -118,11 +118,19 @@ def task_video_snapshot_generator(object_pk):
         if snapshot_path.exists() and snapshot_path.is_file():
             snapshot_path.unlink(missing_ok=True)
 
-        # use ffmpeg to generate get an interesting snapshot within 400 frames
-        subprocess.run(
-            f'{DH_MAP_FFMPEG} -i {original_path.absolute()} -filter:v thumbnail=400 -frames:v 1 {snapshot_path.absolute()}',
-            shell=True, check=True, capture_output=True, timeout=(60 * 1)
-        )
+        try:
+            # use ffmpeg to generate get an interesting snapshot within 500 frames
+            subprocess.run(
+                f'{DH_MAP_FFMPEG} -i {original_path.absolute()} -filter:v thumbnail=500 -frames:v 1 {snapshot_path.absolute()}',
+                shell=True, check=True, capture_output=True, timeout=(60 * 1)
+            )
+        # some videos cause the 'meaningful' thumbnail collection to crash (ex: excessively blurry or other codex errors)
+        except subprocess.CalledProcessError as e:
+            # just skip 10 seconds in and grab something as a fallback
+            subprocess.run(
+                f'{DH_MAP_FFMPEG} -ss 00:00:10 -i {original_path.absolute()} -frames:v 1 -y {snapshot_path.absolute()}',
+                shell=True, check=True, capture_output=True, timeout=(60 * 10)
+            )
 
         chown_directory(video_dir)
         video.video_dir = video_dir
@@ -193,7 +201,6 @@ def task_video_thumbnails_vtt_generator(object_pk):
             storyboard_path.unlink(missing_ok=True)
 
         with TemporaryDirectory() as temp_dir:
-            # use ffmpeg to generate get an interesting snapshot within 500 frames
             subprocess.run(
                 f'{DH_MAP_FFMPEG} -i {original_path.absolute()} -filter:v fps=1/{DH_MAP_VIDEO_THUMBNAIL_INTERVAL},scale=256:144 {temp_dir}/storyboard_%d.jpg',
                 shell=True, check=True, capture_output=True, timeout=(60 * 10)
