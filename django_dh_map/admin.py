@@ -314,7 +314,7 @@ class ContentBlockAudioAdmin(DjangoDhMapAdminMixin, PolymorphicChildModelAdmin):
     _status.short_description = 'Status'
 
     def _audio_tag(self, obj):
-        return mark_safe(f'<audio src="{obj.audio.url}" controls preload="metadata" />') if obj.audio else 'N/A'
+        return mark_safe(f'<audio src="{obj.audio.url}" loading="lazy" controls preload="metadata" />') if obj.audio else 'N/A'
     _audio_tag.short_description = 'Preview'
 
     @admin.action(description="(Re)process audio stream for selected audio(s)")

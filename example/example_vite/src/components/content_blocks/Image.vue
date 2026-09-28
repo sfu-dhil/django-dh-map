@@ -14,7 +14,7 @@ const props = defineProps({
       :alt="object.description || ''"
       loading="lazy" fetchpriority="low"
       @click="() => useDisplayImageModalStore().showImage(object)"
-    >
+    />
     <figcaption class="figure-caption text-center" v-if="object.name" v-html="object.name" />
   </figure>
 </template>
