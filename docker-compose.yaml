@@ -32,7 +32,7 @@ services:
 
   nginx:
     container_name: django_dh_map_nginx
-    image: nginx:1.29-alpine
+    image: nginx:1.31-alpine
     volumes:
       # config
       - ./example/docker/nginx.conf:/etc/nginx/nginx.conf

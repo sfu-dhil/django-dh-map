@@ -277,7 +277,7 @@ onUnmounted(() => {
           text-align: center;
         }
         &.highlight i  {
-          -webkit-text-stroke-color: rgba(13, 110, 353, 1) !important;
+          -webkit-text-stroke-color: rgba(13, 110, 253, 1) !important;
         }
       }
       &.hot-spot-icon-default {
@@ -288,7 +288,7 @@ onUnmounted(() => {
           -webkit-text-stroke-color: white;
         }
         &.highlight i  {
-          -webkit-text-stroke-color: rgba(13, 110, 353, 1) !important;
+          -webkit-text-stroke-color: rgba(13, 110, 253, 1) !important;
         }
       }
       &.hot-spot-icon-image {
@@ -298,7 +298,7 @@ onUnmounted(() => {
           height: 40px;
         }
         &.highlight  {
-          border-color: rgba(13, 110, 353, 1) !important;
+          border-color: rgba(13, 110, 253, 1) !important;
         }
       }
       &.hot-spot-map-transition {

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, inject, onMounted, computed } from 'vue'
+import { ref, inject, onMounted, computed, watch, nextTick  } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { Style, Text, Fill, Stroke, Circle, Icon } from 'ol/style'
@@ -122,7 +122,7 @@ const featureStyle = (openLayersFeature) => {
         image: new Circle({
           radius: icon.size/2+4,
           fill: new Fill({ color: 'rgba(0, 0, 0, 0.0)' }),
-          stroke: new Stroke({ color: isHighlighted ? 'rgba(13, 110, 353, 1)' : 'white', width: 3 })
+          stroke: new Stroke({ color: isHighlighted ? 'rgba(13, 110, 253, 1)' : 'white', width: 3 })
         }),
         zIndex: isHighlighted ? Infinity - 1 : 0
       }),
@@ -143,7 +143,7 @@ const featureStyle = (openLayersFeature) => {
           textBaseline: 'bottom',
           font: 'bold 1em "Font Awesome 7 Free"',
           fill: new Fill({ color: '#6495ED' }),
-          stroke: new Stroke({ color: isHighlighted ? 'rgba(13, 110, 353, 1)' : 'white', width: 3 }),
+          stroke: new Stroke({ color: isHighlighted ? 'rgba(13, 110, 253, 1)' : 'white', width: 3 }),
         }),
         zIndex: isHighlighted ? Infinity - 1 : 0
       }),
@@ -166,7 +166,7 @@ const featureStyle = (openLayersFeature) => {
       image: new Circle({
         radius: 6,
         fill: new Fill({ color: '#6495ED' }),
-        stroke: new Stroke({ color: isHighlighted ? 'rgba(13, 110, 353, 1)' : 'white', width: 1.25 }),
+        stroke: new Stroke({ color: isHighlighted ? 'rgba(13, 110, 253, 1)' : 'white', width: 1.25 }),
       }),
       zIndex: isHighlighted ? Infinity : 0
     })
@@ -250,6 +250,9 @@ const {
   pointerMove: pointerMoveCondition,
   click: clickCondition,
 } = inject('ol-selectconditions')
+watch(featureIdHover, (oldValue, newValue) => {
+  if (newValue !== oldValue) { nextTick(() => sourceVectorRef.value?.source.changed()) }
+})
 onMounted(() => {
   mapRef.value.map.getView().setZoom(zoom.value)
   mapRef.value.map.getView().setRotation(rotation.value)
